@@ -45,10 +45,23 @@ class Parser:
         """Align memory address to boundary"""
         return (val + align - 1) & ~(align - 1)
 
-    def sections(self): #-> List[Tuple[int, bytes, int]]:
+    def sections(self) -> List[Tuple[int, bytes, int]]:
         """Get list of (address, data, permissions) for each section"""
-        pass
-        
+        result = []
+        for section in self.binary.sections:
+           add = self.base + section.virtual_address
+           data = bytearray(section.content)
+           if self.file_type == "elf":
+               perm = UC_PROT_READ
+               perm |= UC_PROT_EXEC if section.has(lief._lief.ELF.Section.FLAGS.EXECINSTR) else 0
+               perm |= UC_PROT_WRITE if section.has(lief._lief.ELF.Section.FLAGS.WRITE) else 0
+           elif self.file_type == "pe":
+               perm = UC_PROT_READ
+               perm |= UC_PROT_EXEC if section.has(lief._lief.PE.Section.FLAGS.EXECINSTR) else 0
+               perm |= UC_PROT_WRITE if section.has(lief._lief.PE.Section.FLAGS.WRITE) else 0
+           result.append((add,data,perm))
+       return result
+
     def relocs(self, new_base: int): #-> List[Tuple[int, int, int]]:
         """Get relocations as (address, size, value_delta)"""
         pass
